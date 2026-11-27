@@ -1,0 +1,73 @@
+
+// ==UserScript==
+// @name         Hover Search
+// @namespace    https://freightcom.com/
+// @version      4.0
+// @description  Open FC Admin Work Order by clicking the Work Order field
+// @match        https://wfe-freightcom.sumasoft.com/*
+// @grant        none
+// ==/UserScript==
+
+(function () {
+    'use strict';
+
+    const TAB_NAME = 'fcadmin_workorder_tab';
+
+    const BASE_URL =
+        'https://fcadmin.freightcom.com/workorder/WorkOrderManager.do?method=view&id=';
+
+    let lastOpenedNumber = '';
+
+    // Find the Work Order input.
+    function getWorkOrderInput() {
+        const labels = document.querySelectorAll('.col-md-5.mt-2');
+
+        for (const label of labels) {
+            if (label.textContent.trim() !== 'Work Order') {
+                continue;
+            }
+
+            const input = label.parentElement?.querySelector(
+                'input[readonly]'
+            );
+
+            if (input && /^\d{6,}$/.test(input.value.trim())) {
+                return input;
+            }
+        }
+
+        return null;
+    }
+
+    // Open the Work Order when the user clicks its input.
+    document.addEventListener('click', function (event) {
+        const input = getWorkOrderInput();
+
+        if (!input || event.target !== input) {
+            return;
+        }
+
+        const id = input.value.trim();
+
+        if (!/^\d{6,}$/.test(id)) {
+            return;
+        }
+
+        // Prevent repeated navigation to the same Work Order.
+        if (id === lastOpenedNumber) {
+            return;
+        }
+
+        lastOpenedNumber = id;
+
+        const url = `${BASE_URL}${encodeURIComponent(id)}&edit=true`;
+
+        const tab = window.open(url, TAB_NAME);
+
+        // Permit retry if the browser blocks the popup.
+        if (!tab) {
+            lastOpenedNumber = '';
+        }
+    }, true);
+
+})();
